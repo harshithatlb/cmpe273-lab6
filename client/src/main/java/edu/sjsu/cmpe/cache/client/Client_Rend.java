@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public class Client {
+public class Client_Rend {
 	private static HashFunction hashFunction = Hashing.md5();
 	private static SortedMap<Integer,String> circle = new TreeMap<Integer, String>();
 	
@@ -28,6 +28,21 @@ public class Client {
 		}
 		return circle.get(hash);
 	}
+	public static int getMaxWeightHashNode(List<String> server, char c){
+		int max_hash = 0;
+		int i =0, node =0;
+		for(String x:server)
+		{
+			int hashValue = hashFunction.newHasher().putString(x, Charsets.UTF_8)
+					.putChar(c).hash().asInt();	
+			if(hashValue>max_hash){
+				max_hash = hashValue;
+				node = i;	 
+			}
+			i++;
+		}
+		return node;
+	}
 	
     public static void main(String[] args) throws Exception {
         
@@ -41,29 +56,19 @@ public class Client {
 	server.add(cacheServer2);
 	server.add(cacheServer3);
 	int i = 0;
-	for ( String x: server)
-	{
-		add(x,i);
-		i++;
-	}	
-	
+
 	for(int j =1;j<=10;j++){
-	    int bucket = Hashing.consistentHash(Hashing.md5().hashInt(j), circle.size());
-	    System.out.println(bucket);
-	    String servers = getObject(bucket);
-	    System.out.println("routed to server "+ servers);
-	    CacheServiceInterface cache = new DistributedCacheService(servers);
-	    cache.put(j, String.valueOf(ch[j]));
+		int num = getMaxWeightHashNode(server, ch[j]);
+		CacheServiceInterface cache = new DistributedCacheService(server.get(num));
+		cache.put(j,String.valueOf(ch[j]));
+		System.out.println("writing to server"+ server.get(num) + ":" + cache.get(j));		
 	}
 	for(int j =1; j<=10;j++)
 	{    
-	   	int bucket = Hashing.consistentHash(Hashing.md5().hashInt(j), circle.size());
-		System.out.println("get starts"); 
-		String servers = getObject(bucket);
-		 
-	    System.out.println(servers);
-	    CacheServiceInterface cache = new DistributedCacheService(servers);
-	    System.out.println("reading key: "+ j + "from server: " +servers);
+		int num = getMaxWeightHashNode(server,ch[j]);
+		CacheServiceInterface cache = new DistributedCacheService(server.get(num));
+		System.out.println("reading from key :" + j + "from server:" + server.get(num));
+
 	}
 	}	
 }
